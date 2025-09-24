@@ -1,0 +1,6 @@
+/models
+/outputs
+/.vscode
+/videos
+/src/highlight_clipper/__pycache__
+*.pyc

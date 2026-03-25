@@ -3,3 +3,5 @@
 /.vscode
 /videos
 */__pycache__
+*.pyc
+*.pyo

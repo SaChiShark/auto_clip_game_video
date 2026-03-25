@@ -49,32 +49,32 @@ class VideoProcessor:
         print(f"來源影片: {video_path}")
         print(f"輸出目錄: {job_output_dir}")
 
-        try:
-            # 步驟 1: 提取音訊
-            wav_path = self._extract_audio(video_path, job_output_dir)
-            
-            # 步驟 2: 分析 (使用預載的模型)
-            print(f"[{job_id}] 正在進行說話者辨識...")
-            diarization_result = self.diarizer.run(wav_path)
-            print(f"[{job_id}] 正在進行語音轉文字...")
-            transcription_result = self.transcriber.run(wav_path)
-            
-            # 步驟 3: 合併
-            print(f"[{job_id}] 正在合併分析結果...")
-            merged_result = self.merger.run(transcription_result, diarization_result)
+        #try:
+        # 步驟 1: 提取音訊
+        wav_path = self._extract_audio(video_path, job_output_dir)
+        
+        # 步驟 2: 分析 (使用預載的模型)
+        print(f"[{job_id}] 正在進行說話者辨識...")
+        diarization_result = self.diarizer.run(wav_path)
+        print(f"[{job_id}] 正在進行語音轉文字...")
+        transcription_result = self.transcriber.run(wav_path)
+        
+        # 步驟 3: 合併
+        print(f"[{job_id}] 正在合併分析結果...")
+        merged_result = self.merger.run(transcription_result, diarization_result)
 
-            # 步驟 4: 儲存與記錄
-            self._save_results(merged_result, job_id, job_output_dir)
-            self._update_manifest(job_id, video_path, status="completed")
-            
-            print(f"--- 任務 {job_id} 成功完成 ---")
-            return True
+        # 步驟 4: 儲存與記錄
+        self._save_results(merged_result, job_id, job_output_dir)
+        self._update_manifest(job_id, video_path, status="completed")
+        
+        print(f"--- 任務 {job_id} 成功完成 ---")
+        return True
 
-        except Exception as e:
-            print(f"--- 任務 {job_id} 處理失敗 ---")
-            print(f"錯誤訊息: {e}")
-            self._update_manifest(job_id, video_path, status="failed")
-            return False
+        #except Exception as e:
+        #    print(f"--- 任務 {job_id} 處理失敗 ---")
+        #    print(f"錯誤訊息: {e}")
+        #    self._update_manifest(job_id, video_path, status="failed")
+        #    return False
 
     def _extract_audio(self, video_path, job_output_dir):
         print(f"[{os.path.basename(job_output_dir)}] 正在提取音訊...")

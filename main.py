@@ -46,7 +46,7 @@ def main():
     # 這一步會比較久，因為它會載入所有 AI 模型
     factory = ProcessorFactory()
     model_path = os.path.join("models", "Breeze-ASR-25-CT2")
-    processor = factory.create_processor(asr_strategy="CT2",asr_model_path=model_path)
+    processor = factory.create_processor(asr_strategy="CT2",asr_model_path=model_path,diarizer_strategy="whisperx")
     # 4. 呼叫 process 方法，啟動處理流程
     processor.process(video_path=args.video_path)
 

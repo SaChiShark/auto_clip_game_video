@@ -1,37 +1,38 @@
 from typing import Any, Dict, List
+from .base import BaseDiarizer
 
-class Diarizer:
+class PyannoteDiarizer(BaseDiarizer):
     """
-    一個使用依賴注入模式的說話者辨識器。
+    一個使用 pyannote.audio 的說話者辨識器。
     它接收一個已經初始化好的 Pyannote Pipeline 物件。
     """
     def __init__(self, diarization_pipeline: Any):
         """
-        初始化 Diarizer。
+        初始化 PyannoteDiarizer。
 
         Args:
             diarization_pipeline (Any): 一個已經被載入的 pyannote.audio.Pipeline 物件。
         """
-        print("Diarizer (DI version): 初始化完成，已接收外部 Pipeline。")
-        # 關鍵改動：直接儲存傳入的 pipeline 物件
+        print("PyannoteDiarizer: 初始化完成，已接收外部 Pyannote Pipeline。")
         self.pipeline = diarization_pipeline
 
-    def run(self, audio_path: str) -> List[Dict[str, Any]]:
+    def run(self, audio_path: str, **kwargs) -> List[Dict[str, Any]]:
         """
         使用被注入的 Pipeline，對指定的音訊檔案進行說話者辨識。
 
         Args:
             audio_path (str): 要處理的音訊檔案路徑。
+            **kwargs: 傳遞給 pyannote pipeline 的額外參數 (例如 num_speakers=4)。
 
         Returns:
             List[Dict[str, Any]]: 包含說話者片段資訊的列表。
         """
-        print(f"Diarizer (DI version): 正在使用預載 Pipeline 處理 {audio_path}")
+        print(f"PyannoteDiarizer: 正在使用預載 Pipeline 處理 {audio_path}")
         
         output_segments = []
         try:
-            # 核心邏輯不變，使用被注入的 pipeline
-            diarization = self.pipeline(audio_path)
+            # 使用 kwargs 將外部指定的參數傳進去 (如 num_speakers)
+            diarization = self.pipeline(audio_path, **kwargs)
             
             for turn, _, speaker in diarization.itertracks(yield_label=True):
                 segment = {

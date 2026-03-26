@@ -10,12 +10,13 @@ from pyannote.audio import Pipeline
 
 # 假設你已經將 modules 中的函式重構成 Class 以便管理模型
 from .modules.transcribers.base import ASRTranscriber # 載入一次 Whisper 模型
-from .modules.diarizer import Diarizer       # 載入一次 Pyannote 模型
+from .modules.diarizers.base import BaseDiarizer       # 載入一次 Pyannote/WhisperX 模型
 from .modules.converter import convert_mp4_to_wav
 from .modules.merger import Merger
+from .modules.audio_utils import mute_non_speech_segments
 
 class VideoProcessor:
-    def __init__(self,diarizer: Diarizer, transcriber: ASRTranscriber,merger:Merger , output_root: str = "outputs"):
+    def __init__(self,diarizer: BaseDiarizer, transcriber: ASRTranscriber,merger:Merger , output_root: str = "outputs"):
         print("VideoProcessor: 正在初始化引擎...")
         # --- 依賴注入階段 ---
         self.transcriber = transcriber
@@ -25,7 +26,7 @@ class VideoProcessor:
         os.makedirs(self.output_root, exist_ok=True)
         print("引擎初始化完成。")
 
-    def process(self, video_path: str) -> dict:
+    def process(self, video_path: str) -> bool:
         """
         處理單一影片的完整管線。
         這個方法可以被重複呼叫。
@@ -34,11 +35,11 @@ class VideoProcessor:
             video_path (str): 要處理的影片檔案路徑。
 
         Returns:
-            dict: 合併後的對話資料，如果失敗則回傳 None。
+            bool: 合併後的對話資料，如果失敗則回傳 None。
         """
         if not os.path.exists(video_path):
             print(f"錯誤：找不到影片檔案：{video_path}")
-            return None
+            return False
 
         # --- 每次處理都獨立的任務狀態 ---
         job_id = self._generate_job_id()
@@ -54,10 +55,11 @@ class VideoProcessor:
         wav_path = self._extract_audio(video_path, job_output_dir)
         
         # 步驟 2: 分析 (使用預載的模型)
-        print(f"[{job_id}] 正在進行說話者辨識...")
-        diarization_result = self.diarizer.run(wav_path)
         print(f"[{job_id}] 正在進行語音轉文字...")
         transcription_result = self.transcriber.run(wav_path)
+        
+        print(f"[{job_id}] 正在進行說話者辨識...")
+        diarization_result = self.diarizer.run(wav_path)
         
         # 步驟 3: 合併
         print(f"[{job_id}] 正在合併分析結果...")

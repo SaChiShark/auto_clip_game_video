@@ -54,21 +54,49 @@ class Merger:
                                  speaker_turns: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
         私有方法：為每個詞找到對應的說話者。
+        優化版：使用最大重疊時間 (Max Overlap) 與最近距離容錯機制。
         """
-        turn_index = 0
         for word in words:
-            word_midpoint = word['start'] + (word['end'] - word['start']) / 2
-            assigned_speaker = 'UNKNOWN'
-            turn = speaker_turns[turn_index]
-            while turn['end'] < word_midpoint:
-                turn_index += 1
-                if turn_index >= len(speaker_turns):
-                    break
-                turn = speaker_turns[turn_index]
-            if turn['start'] <= word_midpoint <= turn['end']:
-                    assigned_speaker = turn['speaker']
-                    break
-            word['speaker'] = assigned_speaker
+            word_start = word['start']
+            word_end = word['end']
+            
+            best_speaker = 'UNKNOWN'
+            max_overlap = 0.0
+            min_distance = float('inf')
+            closest_speaker = 'UNKNOWN'
+
+            for turn in speaker_turns:
+                turn_start = turn['start']
+                turn_end = turn['end']
+                
+                # 計算重疊時間
+                overlap_start = max(word_start, turn_start)
+                overlap_end = min(word_end, turn_end)
+                overlap = max(0.0, overlap_end - overlap_start)
+                
+                if overlap > max_overlap:
+                    max_overlap = overlap
+                    best_speaker = turn['speaker']
+                
+                # 若無重疊，計算詞跟 turn 的最短距離，以防詞語剛好落在縫隙中
+                if overlap == 0:
+                    if word_end <= turn_start:
+                        dist = turn_start - word_end
+                    else:
+                        dist = word_start - turn_end
+                        
+                    if dist < min_distance:
+                        min_distance = dist
+                        closest_speaker = turn['speaker']
+
+            # 如果有重疊就用重疊最多的，如果沒有任何重疊，但距離很近 (例如相距不到 0.5 秒)，就用最近的
+            if max_overlap > 0:
+                word['speaker'] = best_speaker
+            elif min_distance < 0.5: 
+                word['speaker'] = closest_speaker
+            else:
+                word['speaker'] = 'UNKNOWN'
+                
         return words
 
     def _group_words_to_sentences(self, 

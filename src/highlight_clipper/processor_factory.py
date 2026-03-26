@@ -7,9 +7,10 @@ import torch
 # 匯入所有需要的元件藍圖
 from .video_processor import VideoProcessor
 from .modules.transcribers.base import ASRTranscriber
+from .modules.transcribers.base import ASRTranscriber
 from .modules.transcribers.whisper_transcriber import WhisperTranscriber
 from .modules.transcribers.CT2_whisper_transcriber import CT2Transcriber
-from .modules.diarizer import Diarizer
+from .modules.diarizers.base import BaseDiarizer
 from .modules.merger import Merger
 
 # 從環境變數讀取 Token，集中管理
@@ -19,7 +20,7 @@ class ProcessorFactory:
     """
     一個簡單工廠，負責建立並組態一個完整的 VideoProcessor 物件。
     """
-    def create_processor(self, asr_strategy: str = "whisper",asr_model_path: str = 'turbo') -> VideoProcessor:
+    def create_processor(self, asr_strategy: str = "whisper",asr_model_path: str = 'turbo',diarizer_strategy: str = "whisperx") -> VideoProcessor:
         """
         工廠的主要方法。
 
@@ -39,7 +40,7 @@ class ProcessorFactory:
         transcriber = self._create_transcriber(asr_strategy, asr_model_path, device)
         
         # 建立 Diarizer
-        diarizer = self._create_diarizer(device)
+        diarizer = self._create_diarizer(device,diarizer_strategy)
         merger = self._create_merger()
         # 組裝並回傳最終產品
         processor = VideoProcessor(
@@ -66,15 +67,25 @@ class ProcessorFactory:
         else:
             raise ValueError(f"未知的 ASR 策略: {strategy}")
             
-    def _create_diarizer(self, device: str) -> Diarizer:
+    def _create_diarizer(self, device: str, strategy: str = "whisperx") -> BaseDiarizer:
         """建立 Diarizer"""
-        print("Factory: 正在建立 Diarizer...")
-        diarization_pipeline_instance = Pipeline.from_pretrained(
-            "pyannote/speaker-diarization-3.1",
-            use_auth_token=True
-        ).to(torch.device(device))
-        
-        return Diarizer(diarization_pipeline=diarization_pipeline_instance)
+        print(f"Factory: 正在建立 Diarizer (策略: {strategy})...")
+        if strategy == "pyannote":
+            diarization_pipeline_instance = Pipeline.from_pretrained(
+                "pyannote/speaker-diarization-3.1"
+            ).to(torch.device(device))
+            from .modules.diarizers.pyannote_diarizer import PyannoteDiarizer
+            return PyannoteDiarizer(diarization_pipeline=diarization_pipeline_instance)
+        elif strategy == "whisperx":
+            from whisperx.diarize import DiarizationPipeline
+            token = HF_TOKEN
+            if not token:
+                print("警告: 尚未設定 HF_ACCESS_TOKEN 環境變數，WhisperX 可能無法下載模型。")
+            diarization_pipeline_instance = DiarizationPipeline(token=HF_TOKEN, device=device)
+            from .modules.diarizers.whisperx_diarizer import WhisperXDiarizer
+            return WhisperXDiarizer(diarization_pipeline=diarization_pipeline_instance)
+        else:
+            raise ValueError(f"未知的 Diarization 策略: {strategy}")
     
     def _create_merger(self) -> Merger:
         """建立 Merger"""

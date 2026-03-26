@@ -11,7 +11,7 @@ from .modules.transcribers.base import ASRTranscriber
 from .modules.transcribers.whisper_transcriber import WhisperTranscriber
 from .modules.transcribers.CT2_whisper_transcriber import CT2Transcriber
 from .modules.diarizers.base import BaseDiarizer
-from .modules.merger import Merger
+from .modules.mergers.base import BaseMerger
 
 # 從環境變數讀取 Token，集中管理
 HF_TOKEN = os.environ.get("HF_ACCESS_TOKEN")
@@ -20,7 +20,7 @@ class ProcessorFactory:
     """
     一個簡單工廠，負責建立並組態一個完整的 VideoProcessor 物件。
     """
-    def create_processor(self, asr_strategy: str = "whisper",asr_model_path: str = 'turbo',diarizer_strategy: str = "whisperx") -> VideoProcessor:
+    def create_processor(self, asr_strategy: str = "whisper",asr_model_path: str = 'turbo',diarizer_strategy: str = "whisperx",merger_strategy: str = "whisperx") -> VideoProcessor:
         """
         工廠的主要方法。
 
@@ -41,7 +41,7 @@ class ProcessorFactory:
         
         # 建立 Diarizer
         diarizer = self._create_diarizer(device,diarizer_strategy)
-        merger = self._create_merger()
+        merger = self._create_merger(merger_strategy)
         # 組裝並回傳最終產品
         processor = VideoProcessor(
             transcriber=transcriber,
@@ -87,7 +87,14 @@ class ProcessorFactory:
         else:
             raise ValueError(f"未知的 Diarization 策略: {strategy}")
     
-    def _create_merger(self) -> Merger:
+    def _create_merger(self, strategy: str = "whisperx") -> BaseMerger:
         """建立 Merger"""
-        print("Factory: 正在建立 Miarizer...")
-        return Merger()
+        print(f"Factory: 正在建立 Merger (策略: {strategy})...")
+        if strategy == "overlap":
+            from .modules.mergers.overlap_merger import OverlapMerger
+            return OverlapMerger()
+        elif strategy == "whisperx":
+            from .modules.mergers.whisperx_merger import WhisperXMerger
+            return WhisperXMerger()
+        else:
+            raise ValueError(f"未知的 Merger 策略: {strategy}")

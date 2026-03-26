@@ -12,11 +12,11 @@ from pyannote.audio import Pipeline
 from .modules.transcribers.base import ASRTranscriber # 載入一次 Whisper 模型
 from .modules.diarizers.base import BaseDiarizer       # 載入一次 Pyannote/WhisperX 模型
 from .modules.converter import convert_mp4_to_wav
-from .modules.merger import Merger
+from .modules.mergers.base import BaseMerger
 from .modules.audio_utils import mute_non_speech_segments
 
 class VideoProcessor:
-    def __init__(self,diarizer: BaseDiarizer, transcriber: ASRTranscriber,merger:Merger , output_root: str = "outputs"):
+    def __init__(self,diarizer: BaseDiarizer, transcriber: ASRTranscriber,merger:BaseMerger , output_root: str = "outputs"):
         print("VideoProcessor: 正在初始化引擎...")
         # --- 依賴注入階段 ---
         self.transcriber = transcriber

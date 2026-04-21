@@ -1,0 +1,59 @@
+@startuml Highlight_Clipper_Architecture
+
+title Highlight Clipper - Architecture (Design Patterns)
+
+package "Core Engine" {
+    class VideoProcessor {
+        - transcriber: ASRTranscriber
+        - diarizer: BaseDiarizer
+        - merger: BaseMerger
+        + process(video_path: str)
+    }
+
+    class ComponentRegistry {
+        - _registry: Dict[str, Creator]
+        + register(key: str)
+        + create(key: str, **kwargs)
+    }
+
+    class ProcessorFactory {
+        + create_processor(asr_strategy, diarizer_strategy, merger_strategy)
+    }
+}
+
+package "Modules" {
+    abstract class ASRTranscriber {
+        {abstract} + run(audio_path)
+    }
+    class WhisperTranscriber extends ASRTranscriber {
+        + run(audio_path)
+    }
+    class CT2Transcriber extends ASRTranscriber {
+        + run(audio_path)
+    }
+
+    abstract class BaseDiarizer {
+        {abstract} + run(audio_path)
+    }
+    class PyannoteDiarizer extends BaseDiarizer {
+        + run(audio_path)
+    }
+    class WhisperXDiarizer extends BaseDiarizer {
+        + run(audio_path)
+    }
+
+    abstract class BaseMerger {
+        {abstract} + run(transcription, diarization)
+    }
+    class OverlapMerger extends BaseMerger
+    class WhisperXMerger extends BaseMerger
+}
+
+' Relationships
+ProcessorFactory ..> ComponentRegistry 
+ProcessorFactory ..> VideoProcessor 
+VideoProcessor o-- ASRTranscriber
+VideoProcessor o-- BaseDiarizer 
+VideoProcessor o-- BaseMerger 
+
+@enduml

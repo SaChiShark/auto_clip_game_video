@@ -1,5 +1,17 @@
 from typing import Any, Dict, List
 from .base import BaseDiarizer
+from ...registry import diarization_registry
+import torch
+
+@diarization_registry.register("pyannote")
+def create_pyannote_diarizer(device: str, **kwargs) -> BaseDiarizer:
+    from pyannote.audio import Pipeline
+    print(f"Factory: 正在建立 Diarizer (策略: pyannote)...")
+    diarization_pipeline_instance = Pipeline.from_pretrained(
+        "pyannote/speaker-diarization-3.1"
+    ).to(torch.device(device))
+    return PyannoteDiarizer(diarization_pipeline=diarization_pipeline_instance)
+
 
 class PyannoteDiarizer(BaseDiarizer):
     """

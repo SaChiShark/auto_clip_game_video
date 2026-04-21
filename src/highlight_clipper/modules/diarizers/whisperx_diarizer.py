@@ -1,5 +1,19 @@
 from typing import Any, Dict, List, Optional
 from .base import BaseDiarizer
+from ...registry import diarization_registry
+import os
+
+HF_TOKEN = os.environ.get("HF_ACCESS_TOKEN")
+
+@diarization_registry.register("whisperx")
+def create_whisperx_diarizer(device: str, **kwargs) -> BaseDiarizer:
+    from whisperx.diarize import DiarizationPipeline
+    print(f"Factory: 正在建立 Diarizer (策略: whisperx)...")
+    if not HF_TOKEN:
+        print("警告: 尚未設定 HF_ACCESS_TOKEN 環境變數，WhisperX 可能無法下載模型。")
+    diarization_pipeline_instance = DiarizationPipeline(token=HF_TOKEN, device=device)
+    return WhisperXDiarizer(diarization_pipeline=diarization_pipeline_instance)
+
 
 class WhisperXDiarizer(BaseDiarizer):
     """

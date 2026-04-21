@@ -1,5 +1,13 @@
 from typing import Any
 from .base import ASRTranscriber, NormalizedTranscription
+from ...registry import asr_registry
+
+@asr_registry.register("whisper")
+def create_whisper_transcriber(model_path: str, device: str, **kwargs) -> ASRTranscriber:
+    import whisper
+    print(f"Factory: 正在建立 Transcriber (策略: whisper)...")
+    whisper_model_instance = whisper.load_model(model_path, device=device)
+    return WhisperTranscriber(whisper_model=whisper_model_instance)
 
 class WhisperTranscriber(ASRTranscriber):
     """

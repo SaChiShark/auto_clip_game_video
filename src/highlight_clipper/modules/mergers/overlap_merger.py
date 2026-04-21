@@ -1,5 +1,12 @@
 from typing import List, Dict, Any
 from .base import BaseMerger
+from ...registry import merger_registry
+
+@merger_registry.register("overlap")
+def create_overlap_merger(**kwargs) -> BaseMerger:
+    print(f"Factory: 正在建立 Merger (策略: overlap)...")
+    return OverlapMerger()
+
 from ..transcribers.base import NormalizedTranscription
 
 class OverlapMerger(BaseMerger):

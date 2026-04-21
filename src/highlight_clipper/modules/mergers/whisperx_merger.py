@@ -2,6 +2,13 @@ import pandas as pd
 from typing import List, Dict, Any
 from .base import BaseMerger
 from ..transcribers.base import NormalizedTranscription
+from ...registry import merger_registry
+
+@merger_registry.register("whisperx")
+def create_whisperx_merger(**kwargs) -> BaseMerger:
+    print(f"Factory: 正在建立 Merger (策略: whisperx)...")
+    return WhisperXMerger()
+
 
 class WhisperXMerger(BaseMerger):
     """

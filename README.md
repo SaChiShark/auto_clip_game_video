@@ -1,8 +1,8 @@
 # Auto Clip Game Video (Experimental Prototype)
 
-這是一個用來自動擷取遊戲影片「對話精華」的實驗性專案。
+這是一個用來自動擷取遊戲影片對話精華的實驗性專案。
 
-專案的核心目標是透用語音辨識 (ASR) 與講者分離 (Speaker Diarization) 技術，自動找出遊戲影片中的重要對話片段。儘管在實際開發後，發現目前開源模型處理「複雜遊戲背景音與人聲分離」的效果仍有其天花板（導致難以達到商用級別的剪輯精準度），但**本專案的架構設計宗旨在於打造一個「高彈性、易於實驗」的測試平台**。
+專案的核心目標是透用語音辨識 (ASR) 與講者分離 (Speaker Diarization) 技術，自動找出遊戲影片中的重要對話片段。儘管在實際開發後，發現目前開源模型處理「複雜遊戲背景音與人聲分離」的效果仍有其天花板，但**本專案的架構設計宗旨在於打造一個「高彈性、易於實驗」的測試平台**。
 
 ## 系統架構與設計模式 (Design Patterns)
 
@@ -13,9 +13,12 @@
 
 ### 2. Registry & Factory Pattern (註冊表與工廠模式)
 
-為了避免在主程式中寫滿冗長的 `if-else` 模型切換邏輯，我們實作了**動態註冊表** (`registry.py`)：
-*   **高擴充性 (Open-Closed Principle)**：想加入新模型（例如下個世代的 WhisperX），只需實作類別並加上 `@register("名稱")` 裝飾器，不需修改核心工廠或業務邏輯代碼。
-*   **延遲載入 (Lazy-Loading)**：這解決了傳統 import 帶來的效能痛點。像 `torch`、`whisper` 這些極耗 VRAM 的庫，被封裝在產生器內部，確保**「沒用到的模型，絕對不會佔用記憶體」**。
+為了避免在主程式中寫滿冗長的 `if-else` 模型切換邏輯，我們結合了註冊表與工廠模式：
+*   **動態註冊表 (`registry.py`)**：
+    *   **高擴充性 (Open-Closed Principle)**：想加入新模型（例如下個世代的 Whisper、或是針對各情境特化的模型），只需實作類別並加上 `@register("名稱")` 裝飾器，不需修改核心工廠或業務邏輯。
+*   **統一工廠 (`ProcessorFactory`)**：
+    *   **封裝複雜度**：將 `VideoProcessor` 所需的 ASR、Diarizer、Merger 等多個策略模組的建立與組裝邏輯封裝在 `ProcessorFactory` 中。
+    *   **依賴注入 (Dependency Injection)**：工廠負責根據傳入的參數（例如字串標籤），從對應的註冊表取出並建立實體，最後注入到 `VideoProcessor` 之中。這使得核心處理流程與具體的 AI 實作完全解耦。
 
 ### 3. Strategy & Adapter Pattern (策略與轉接器模式)
 各個 AI 庫的輸出格式千奇百怪。為了確保主流程 (`VideoProcessor`) 不受第三方庫污染：
